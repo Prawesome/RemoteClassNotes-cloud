@@ -2,31 +2,34 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp(functions.config().firebase);
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onReques t((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
-
 exports.createSubject = functions.database
   .ref("/files/{pushId}/")
   .onWrite(snapshot => {
     const oldData = snapshot.before.val();
     const newData = snapshot.after.val();
+    let flag = true;
 
     const subjectsRef = admin
       .database()
-      .ref();
-    console.log(subjectsRef.toJSON());
+      .ref()
+      .child("/subjects/");
 
-    // subjectsRef.forEach(element => {
-    //   if (element === newData.subjectName) {
-    //     return null;
-    //   }
-    // });
+    subjectsRef.once('value').then(snapshot => {
+      snapshot.forEach(element => {
+        console.log(flag);
+        console.log(element.val());
+        if (element.val() === newData.subjectName) {
+          flag = false;
+        }
+      });
+      if (flag) {
+        console.log("New subject created");
+        return subjectsRef.push().set(newData.subjectName);
+      }
+      return null;
+    }).catch( error => console.log('Error creating subject: ', error));
 
-    return subjectsRef.push().set(newData.subjectName);
+    return null;
   });
 
 exports.sendNotification = functions.database
